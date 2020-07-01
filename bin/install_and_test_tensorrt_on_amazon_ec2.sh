@@ -7,6 +7,29 @@
 ################################################################################
 
 
+#!/bin/bash
+
+usage="
+Usage:
+	 install_and_test_tensorrt_on_amazon_ec2.sh --tensorrt-url http://example.com/tmp/cuda10.2-tensorrt7.0.tar
+"
+
+tensorrt_url=''
+while [[ "$#" -gt 0 ]]; do
+    echo "here $1"
+    case $1 in
+        -t|--tensorrt-url) tensorrt_url="$2"; shift ;;
+        -h|--help) echo 'requires --tensorrt-url parameter' ;;
+        *) echo "$usage"; exit 1 ;;
+    esac
+    shift
+done
+
+if ["$tensorrt_url" == ""]; then
+    echo "$usage"
+    exit
+fi
+
 ################################################################################
 # Choose cuda:
 #    https://docs.aws.amazon.com/dlami/latest/devguide/tutorial-base.html
@@ -131,8 +154,8 @@ sudo apt-get install -y cuda-toolkit-10-2
 #
 # that doesn't require filling out the damn survey each time.
 ################################################################################
-
-wget http://server.local/tmp/cuda10.2-tensorrt7.0.tar
+cd
+wget $tensorrt_url
 tar xvf cuda10.2-tensorrt7.0.tar
 sudo dpkg -i ./nv-tensorrt-repo-ubuntu1804-cuda10.2-trt7.0.0.11-ga-20191216_1-1_amd64.deb
 sudo apt-key add /var/nv-tensorrt-repo-cuda10.2-trt7.0.0.11-ga-20191216/7fa2af80.pub
