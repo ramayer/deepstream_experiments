@@ -11,10 +11,11 @@
 
 usage="
 Usage:
-	 install_and_test_tensorrt_on_amazon_ec2.sh --tensorrt-url http://example.com/tmp/cuda10.2-tensorrt7.0.tar
+	 install_and_test_tensorrt_on_amazon_ec2.sh --tensorrt-url http://example.com/tmp/cuda10.2-tensorrt7.0.tar 
 "
 
 tensorrt_url=''
+deepstream_url=http://example.com/tmp/deepstream-5.0_5.0.0-1_amd64.deb
 while [[ "$#" -gt 0 ]]; do
     echo "here $1"
     case $1 in
@@ -37,6 +38,13 @@ fi
 
 sudo rm /usr/local/cuda; sudo ln -s /usr/local/cuda-10.2 /usr/local/cuda
 
+###############################################################################
+# check nvidia drivers
+###############################################################################
+sudo apt-get install -y ubuntu-drivers-common
+ubuntu-drivers devices
+nvcc --version
+
 ################################################################################
 # check cuda
 ################################################################################
@@ -47,15 +55,6 @@ nvidia-smi
 cd /usr/local/cuda/samples/1_Utilities/deviceQuery
 sudo make
 ./deviceQuery
-
-
-
-###############################################################################
-# check nvidia drivers
-###############################################################################
-sudo apt install -y ubuntu-drivers-common
-ubuntu-drivers devices
-nvcc --version
 
 ################################################################################
 # Now try this python program from this pycuda tutorial
@@ -173,3 +172,65 @@ pip3 install Pillow
 sudo ./download_pgms.py
 cd /usr/src/tensorrt
 ./bin/sample_mnist
+
+################################################################################
+# Install gstreamer
+################################################################################
+
+sudo apt-get -y install \
+     libssl1.0.0 \
+     libgstreamer1.0-0 \
+     gstreamer1.0-tools \
+     gstreamer1.0-plugins-good \
+     gstreamer1.0-plugins-bad \
+     gstreamer1.0-plugins-ugly \
+     gstreamer1.0-libav \
+     libgstrtspserver-1.0-0 \
+     libjansson4
+
+################################################################################
+# Install libkafka (and related tools)
+################################################################################
+
+sudo apt-get install -y librdkafka1 librdkafka-dev librdkafka++1 python3-confluent-kafka
+
+
+
+exit
+
+################################################################################
+################################################################################
+# The part below here is not yet working.
+################################################################################
+################################################################################
+
+
+################################################################################
+# download the deepstream .deb
+################################################################################
+#
+# wget 'https://developer.download.nvidia.com/assets/Deepstream/DeepStream_5.0/deepstream-5.0_5.0.0-1_amd64.deb?drgRRH6Ed8lLpGWnIUtsGQh9M2ucowfWHqGrlwFs-cPewdVrK-zlwKtuGK2_IYGjpcBTXp8wCZU-Wc7E3JD6mClBELkoSGYFqtDsxwbFUngRIThjUXYRSFA8HKMllw4zZTjrEWIEOb-VFLTXAvcLNvcnAM_kc3BUpjey6_Zma7c'
+cd
+wget $deepstream_url
+sudo apt-get install -y ./deepstream-5.0_5.0.0-1_amd64.deb
+cd /opt/nvidia/deepstream/deepstream-5.0/samples 
+cd /opt/nvidia/deepstream/deepstream-5.0/sources/apps/sample_apps/deepstream-test1
+make
+./deepstream-test1-app /opt/nvidia/deepstream/deepstream-5.0/samples/streams/sample_1080p_h264.mp4
+
+
+## what was that supposed to do?
+cd
+git clone https://github.com/NVIDIA-AI-IOT/deepstream_python_apps.git
+cd deepstream_python_apps/
+
+# gives an error on 'import gi'.  
+# https://askubuntu.com/questions/1057832/how-to-install-gi-for-anaconda-python3-6
+#
+# sudo apt-get install ubuntu-restricted-extras
+sudo apt-get install -y ubuntu-restricted-extras
+conda install -c conda-forge pygobject
+pip install gobject PyGObject
+pip install pyds
+cd ~/deepstream_python_apps/apps/deepstream-test1
+python deepstream_test_1.py  /opt/nvidia/deepstream/deepstream-5.0/samples/streams/sample_720p.h264
