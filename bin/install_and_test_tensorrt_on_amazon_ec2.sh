@@ -11,44 +11,52 @@
 
 usage="
 Usage:
-	 install_and_test_tensorrt_on_amazon_ec2.sh --tensorrt-url http://example.com/tmp/cuda10.2-tensorrt7.0.tar 
+	 install_and_test_tensorrt_on_amazon_ec2.sh --download-prefix http://example.com/tmp
 "
 
-tensorrt_url=''
-deepstream_url=http://example.com/tmp/deepstream-5.0_5.0.0-1_amd64.deb
+download_prefix=''
 while [[ "$#" -gt 0 ]]; do
     echo "here $1"
     case $1 in
-        -t|--tensorrt-url) tensorrt_url="$2"; shift ;;
+        -d|--download-prefix) download_prefix="$2"; shift ;;
         -h|--help) echo 'requires --tensorrt-url parameter' ;;
         *) echo "$usage"; exit 1 ;;
     esac
     shift
 done
 
-if ["$tensorrt_url" == ""]; then
+if [ "$download_prefix" == "" ]; then
     echo "$usage"
     exit
 fi
+
+tensorrt_url=$download_prefix'/cuda10.2-tensorrt7.0.tar'
+deepstream_url=$download_prefix'/deepstream-5.0_5.0.0-1_amd64.deb'
+
+echo "Will download TensorRT from" $tensorrt_url
+echo "Will download Deepstream from" $deepstream_url
+
 
 ################################################################################
 # Choose cuda:
 #    https://docs.aws.amazon.com/dlami/latest/devguide/tutorial-base.html
 ################################################################################
 
+echo "======== choosing cuda-10.2"
 sudo rm /usr/local/cuda; sudo ln -s /usr/local/cuda-10.2 /usr/local/cuda
 
 ###############################################################################
 # check nvidia drivers
 ###############################################################################
-sudo apt-get install -y ubuntu-drivers-common
+echo "======== Checking nvidia drivers"
+sudo apt-get -qq update
+sudo apt-get -qq -y install ubuntu-drivers-common
 ubuntu-drivers devices
-nvcc --version
 
 ################################################################################
 # check cuda
 ################################################################################
-
+echo "======== Checking cuda"
 nvcc --version
 nvidia-smi
 
@@ -61,8 +69,10 @@ sudo make
 #
 #  https://documen.tician.de/pycuda/tutorial.html
 ################################################################################
+echo "======== Checking pycuda"
+cd
 
-pip install 'pycuda>=2019.1.1'
+pip install --quiet 'pycuda>=2019.1.1'
 
 cat > test_pycuda.py <<EOL
 
@@ -99,6 +109,8 @@ python test_pycuda.py
 #
 # https://www.tensorflow.org/overview
 ################################################################################
+echo "======== checking tensorflow from python"
+cd 
 
 pip install tensorflow
 
@@ -137,11 +149,11 @@ python test_tensorflow.py
 #  "tensorrt : Depends: libnvinfer7 (= 7.0.0-1+cuda10.2) but it is not going to be installed".
 # 
 ################################################################################
-
+echo "======== Installing more TensorRT dependencies"
 sudo apt-key adv --fetch-keys http://developer.download.nvidia.com/compute/cuda/repos/ubuntu1804/x86_64/7fa2af80.pub
 sh -c 'echo "deb http://developer.download.nvidia.com/compute/cuda/repos/ubuntu1804/x86_64 /" | sudo tee /etc/apt/sources.list.d/cuda.list'
-sudo apt-get update
-sudo apt-get install -y cuda-toolkit-10-2
+sudo apt-get -qq update
+sudo apt-get -qq -y install cuda-toolkit-10-2
 
 
 ################################################################################
@@ -153,18 +165,19 @@ sudo apt-get install -y cuda-toolkit-10-2
 #
 # that doesn't require filling out the damn survey each time.
 ################################################################################
+echo "======== Installing TensorRT"
 cd
-wget $tensorrt_url
+wget -N $tensorrt_url
 tar xvf cuda10.2-tensorrt7.0.tar
 sudo dpkg -i ./nv-tensorrt-repo-ubuntu1804-cuda10.2-trt7.0.0.11-ga-20191216_1-1_amd64.deb
 sudo apt-key add /var/nv-tensorrt-repo-cuda10.2-trt7.0.0.11-ga-20191216/7fa2af80.pub
-sudo apt-get update
-sudo apt-get install -y tensorrt
-sudo apt-get install -y uff-converter-tf
+sudo apt-get -qq update
+sudo apt-get -qq -y install tensorrt uff-converter-tf
 
 ################################################################################
 # Compile and Run the tensorrt samples
 ################################################################################
+echo "======== Testing TensorRT"
 cd /usr/src/tensorrt/samples/sampleMNIST
 sudo make 
 cd /usr/src/tensorrt/data/mnist
@@ -176,8 +189,8 @@ cd /usr/src/tensorrt
 ################################################################################
 # Install gstreamer
 ################################################################################
-
-sudo apt-get -y install \
+echo "======== Installing gstreamer"
+sudo apt-get -qq -y install \
      libssl1.0.0 \
      libgstreamer1.0-0 \
      gstreamer1.0-tools \
@@ -191,18 +204,8 @@ sudo apt-get -y install \
 ################################################################################
 # Install libkafka (and related tools)
 ################################################################################
-
-sudo apt-get install -y librdkafka1 librdkafka-dev librdkafka++1 python3-confluent-kafka
-
-
-
-exit
-
-################################################################################
-################################################################################
-# The part below here is not yet working.
-################################################################################
-################################################################################
+echo "======== Installing libkafka"
+sudo apt-get -qq -y install librdkafka1 librdkafka-dev librdkafka++1 python3-confluent-kafka
 
 
 ################################################################################
@@ -210,16 +213,33 @@ exit
 ################################################################################
 #
 # wget 'https://developer.download.nvidia.com/assets/Deepstream/DeepStream_5.0/deepstream-5.0_5.0.0-1_amd64.deb?drgRRH6Ed8lLpGWnIUtsGQh9M2ucowfWHqGrlwFs-cPewdVrK-zlwKtuGK2_IYGjpcBTXp8wCZU-Wc7E3JD6mClBELkoSGYFqtDsxwbFUngRIThjUXYRSFA8HKMllw4zZTjrEWIEOb-VFLTXAvcLNvcnAM_kc3BUpjey6_Zma7c'
+
+echo "======== Installing DeepStream"
 cd
-wget $deepstream_url
-sudo apt-get install -y ./deepstream-5.0_5.0.0-1_amd64.deb
-cd /opt/nvidia/deepstream/deepstream-5.0/samples 
+wget -N $deepstream_url
+sudo apt-get -qq -y install ./deepstream-5.0_5.0.0-1_amd64.deb
+
+################################################################################
+# download the deepstream .deb
+################################################################################
+echo "======== Testing DeepStream"
 cd /opt/nvidia/deepstream/deepstream-5.0/sources/apps/sample_apps/deepstream-test1
 make
+
 ./deepstream-test1-app /opt/nvidia/deepstream/deepstream-5.0/samples/streams/sample_1080p_h264.mp4
 
 
-## what was that supposed to do?
+################################################################################
+################################################################################
+# Attempt the python gstreamer wrapper.
+#
+# The part below here is not yet working.
+# Python can't find the gstreamer plugins.
+################################################################################
+################################################################################
+
+exit
+echo "======== Testing Python gstreamer"
 cd
 git clone https://github.com/NVIDIA-AI-IOT/deepstream_python_apps.git
 cd deepstream_python_apps/
@@ -228,7 +248,7 @@ cd deepstream_python_apps/
 # https://askubuntu.com/questions/1057832/how-to-install-gi-for-anaconda-python3-6
 #
 # sudo apt-get install ubuntu-restricted-extras
-sudo apt-get install -y ubuntu-restricted-extras
+sudo apt-get -qq -y install ubuntu-restricted-extras
 conda install -c conda-forge pygobject
 pip install gobject PyGObject
 pip install pyds
