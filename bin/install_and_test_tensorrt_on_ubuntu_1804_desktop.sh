@@ -312,8 +312,10 @@ make
 
 #
 cd /opt/nvidia/deepstream/deepstream-5.0/bin
-make
 ./deepstream-opencv-test file:///opt/nvidia/deepstream/deepstream-5.0/samples/streams/sample_720p.h264
+
+
+cd /opt/nvidia/deepstream/deepstream-5.0/bin
 ./deepstream-app -c /opt/nvidia/deepstream/deepstream-5.0/samples/configs/deepstream-app/source1_usb_dec_infer_resnet_int8.txt 
 
 ################################################################################
@@ -379,8 +381,6 @@ gst-launch-1.0 udpsrc port=1234 !     "application/x-rtp, payload=127" !     rtp
 # https://docs.nvidia.com/metropolis/deepstream/plugin-manual/index.html#page/DeepStream%20Plugins%20Development%20Guide/deepstream_plugin_faq.html#
 #
 #  dlopen error: /opt/nvidia/deepstream/deepstream-4.0/lib/libnvds_mot_klt.so: cannot open shared object file: No such file or directory
-
-
 # This works:
 
 cd /opt/nvidia/deepstream/deepstream-5.0/sources/apps/sample_apps/deepstream-dewarper-test
@@ -390,3 +390,11 @@ gst-launch-1.0 uridecodebin uri= file://`pwd`/../../../../samples/streams/sample
 
 cd /opt/nvidia/deepstream/deepstream-5.0/samples/
 gst-launch-1.0 filesrc location = ./streams/sample_1080p_h264.mp4 ! qtdemux ! h264parse ! nvv4l2decoder ! m.sink_0 nvstreammux name=m width=1280 height=720 batch-size=1  ! nvinfer config-file-path= ./configs/deepstream-app/config_infer_primary.txt ! dsexample full-frame=1 ! nvvideoconvert ! nvdsosd ! nveglglessink sync=0
+
+
+# Good gstreamer documentation: http://4youngpadawans.com/gstreamer-real-life-examples/
+
+# attempt to save h.264 ... works
+
+gst-launch-1.0 -v v4l2src ! 'video/x-raw, width=(int)640, height=(int)480, framerate=10/1' ! videoconvert ! x264enc pass=qual quantizer=20 tune=zerolatency ! filesink location=/tmp/out.h264
+gst-discoverer-1.0 /tmp/out.h264 
