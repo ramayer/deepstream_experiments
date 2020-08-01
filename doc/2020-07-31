@@ -1,0 +1,105 @@
+pip3 install torch
+pip install torchvision
+pip install ipykernel
+ipython kernel install --user --name=projectname
+
+
+Attempting https://github.com/NVIDIA-AI-IOT/trt_pose
+
+================================================================================
+
+It gives errors in ipywidgets
+
+https://ipywidgets.readthedocs.io/en/stable/user_install.html
+
+pip install ipywidgets
+jupyter nbextension enable --py widgetsnbextension
+
+================================================================================
+
+https://github.com/NVIDIA-AI-IOT/torch2trt
+
+================================================================================
+pip install torch
+git clone https://github.com/NVIDIA-AI-IOT/torch2trt
+cd torch2trt
+python3 setup.py install
+
+# That gives a tensorrt error.... leading to this.
+
+
+https://docs.nvidia.com/deeplearning/tensorrt/archives/tensorrt_401/tensorrt-api/python_api/index.html
+
+https://docs.nvidia.com/deeplearning/tensorrt/archives/tensorrt-713/install-guide/index.html
+sudo apt-get install python3-libnvinfer-dev
+sudo apt-get install uff-converter-tf
+
+
+# none of this works on python 3.8 :(
+
+https://forums.developer.nvidia.com/t/support-for-python3-8/112303
+https://docs.nvidia.com/deeplearning/tensorrt/archives/tensorrt-700/tensorrt-support-matrix/index.html#software-version-platform
+
+
+################################################################################
+
+
+Installing 
+
+https://github.com/facebookresearch/votenet/issues/2
+
+
+
+
+================================================================================
+================================================================================
+================================================================================
+================================================================================
+================================================================================
+  Give up - try docker
+
+https://docs.nvidia.com/metropolis/deepstream/plugin-manual/index.html#page/DeepStream%20Plugins%20Development%20Guide/deepstream_plugin_docker.html
+
+
+
+
+
+ron@ron-whitebox:~/torch2trt$ docker run --gpus all -it --rm -v /tmp/.X11-unix:/tmp/.X11-unix -e DISPLAY=$DISPLAY -w /root nvcr.io/nvidia/deepstream:5.0-dp-20.04-triton
+
+===============================
+==   DeepStreamSDK 5.0       ==
+===============================
+
+*** LICENSE AGREEMENT ***
+By using this software you agree to fully comply with the terms and conditions
+of the License Agreement. The License Agreement is located at
+/opt/nvidia/deepstream/deepstream-5.0/LicenseAgreement.pdf. If you do not agree
+to the terms and conditions of the License Agreement do not use the software.
+
+
+===============================
+== TensorRT Inference Server ==
+===============================
+
+NVIDIA Release 20.01 (build 9326846)
+
+Copyright (c) 2018-2019, NVIDIA CORPORATION.  All rights reserved.
+
+Various files include modifications (c) NVIDIA CORPORATION.  All rights reserved.
+NVIDIA modifications are covered by the license terms that apply to the underlying
+project or file.
+
+ERROR: This container was built for CPUs supporting at least the AVX instruction set, but
+       the CPU detected was Intel(R) Pentium(R) CPU G3450 @ 3.40GHz, which does not report
+       support for AVX.  An Illegal Instrution exception at runtime is likely to result.
+       See https://en.wikipedia.org/wiki/Advanced_Vector_Extensions#CPUs_with_AVX .
+
+NOTE: The SHMEM allocation limit is set to the default of 64MB.  This may be
+   insufficient for the inference server.  NVIDIA recommends the use of the following flags:
+   nvidia-docker run --shm-size=1g --ulimit memlock=-1 --ulimit stack=67108864 ...
+
+
+
+################################################################################
+
+https://github.com/NVIDIA/nvidia-docker/issues/864
