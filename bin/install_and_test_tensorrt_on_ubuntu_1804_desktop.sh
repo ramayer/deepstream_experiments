@@ -295,7 +295,17 @@ sudo apt-get -qq -y install ./deepstream-5.0_5.0.0-1_amd64.deb
 
 ################################################################################
 # download the deepstream .deb
+#
 ################################################################################
+
+#  Note - to compile some of the examples, you need to use the cflags environment
+#  produced by `pkg-config --cflags gstreamer-1.0`
+#
+#    pkg-config --cflags gstreamer-1.0 
+#    -pthread -I/usr/include/gstreamer-1.0 -I/usr/include/glib-2.0 -I/usr/lib/x86_64-linux-gnu/glib-2.0/include
+
+export CFLAGS=`pkg-config --cflags gstreamer-1.0`
+
 echo "======== Testing DeepStream"
 cd /opt/nvidia/deepstream/deepstream-5.0/sources/apps/sample_apps/deepstream-test1
 make
@@ -398,3 +408,63 @@ gst-launch-1.0 filesrc location = ./streams/sample_1080p_h264.mp4 ! qtdemux ! h2
 
 gst-launch-1.0 -v v4l2src ! 'video/x-raw, width=(int)640, height=(int)480, framerate=10/1' ! videoconvert ! x264enc pass=qual quantizer=20 tune=zerolatency ! filesink location=/tmp/out.h264
 gst-discoverer-1.0 /tmp/out.h264 
+
+
+################################################################################
+#
+# Use nvidia docker images
+#
+################################################################################
+
+
+################################################################################
+# Docker testing
+################################################################################
+# 
+# Following information here:
+#
+# https://github.com/NVIDIA/nvidia-docker
+#
+# https://ngc.nvidia.com/signin
+#
+# https://docs.nvidia.com/deeplearning/frameworks/user-guide/index.html
+#
+
+# Add the package repositories
+distribution=$(. /etc/os-release;echo $ID$VERSION_ID)
+curl -s -L https://nvidia.github.io/nvidia-docker/gpgkey | sudo apt-key add -
+curl -s -L https://nvidia.github.io/nvidia-docker/$distribution/nvidia-docker.list | sudo tee /etc/apt/sources.list.d/nvidia-docker.list
+
+sudo apt-get update && sudo apt-get install -y nvidia-container-toolkit
+sudo systemctl restart docker
+
+docker run --gpus all nvidia/cuda:10.0-base nvidia-smi
+
+# seems to work - doesn't do much.
+
+################################################################################
+# Trying deepstream container.
+# https://ngc.nvidia.com/catalog/containers/nvidia:deepstream
+################################################################################
+
+docker pull nvcr.io/nvidia/deepstream:5.0-dp-20.04-triton
+
+
+
+################################################################################
+# Attempt this pose detector.
+################################################################################
+
+https://github.com/tensorlayer/hyperpose
+
+
+
+################################################################################
+# jupyter
+
+http://192.168.0.78:8888/?token=[redacted]
+
+
+
+
+
