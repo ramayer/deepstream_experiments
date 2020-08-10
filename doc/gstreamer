@@ -1,0 +1,20 @@
+# Works on laptop:
+
+gst-launch-1.0 videotestsrc ! ximagesink
+
+# Works on alan's
+
+gst-launch-1.0 videotestsrc ! autovideosink
+
+# Both work on my desktop
+
+
+# This makes more work on the laptop
+#
+# https://stackoverflow.com/questions/54097034/gst-good-plugins-installed-but-no-element-autovideosink
+# 
+export GST_PLUGIN_SYSTEM_PATH_1_0=$GST_PLUGIN_SYSTEM_PATH_1_0:/usr/lib/x86_64-linux-gnu/gstreamer-1.0
+echo $GST_PLUGIN_SYSTEM_PATH_1_0
+
+gst-launch-1.0 filesrc location=/dev/urandom ! videoparse width=640 height=480 format=GST_VIDEO_FORMAT_YUY2 ! videoconvert ! autovideosink  
+
