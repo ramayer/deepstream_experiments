@@ -1,16 +1,26 @@
 # Openpose demo
 #
-# Based on https://hub.docker.com/r/cwaffles/openpose
+# Based on https://hub.docker.com/r/cwaffles/openpose ; but doesn't seem to work anymore.
+#
+# Upgraded for 2019 based on:
+#
+#  https://outline.com/VazH8S
+#
+#
+# Errors out with: 
+#   CMake Error at cmake/Cuda.cmake:263 (message):
+#   cuDNN version >3 is required.
+# but 
+#   libcudnn8-dev is already the newest version (8.0.1.13-1+cuda11.0).
+
 
 FROM nvidia/cuda:10.0-cudnn7-devel
 
-#get deps
-RUN apt-get update && \
-DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-python3-dev python3-pip git g++ wget make libprotobuf-dev protobuf-compiler libopencv-dev \
-libgoogle-glog-dev libboost-all-dev libcaffe-cuda-dev libhdf5-dev libatlas-base-dev
+RUN apt-get update
 
-#for python api
+RUN DEBIAN_FRONTEND=noninteractive apt-get install -y \
+   autoconf automake libtool curl make g++ unzip
+
 RUN pip3 install numpy opencv-python 
 
 #replace cmake as old version has CUDA variable bugs
