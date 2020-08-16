@@ -1,0 +1,205 @@
+
+# interesting starting ponts for docker containers
+#    nvidia/cuda:10.0-cudnn7-devel-ubuntu16.04    # the openpose containers were based on this one.
+#    nvidia/cuda:10.0-cudnn7-devel-ubuntu18.04    # newer
+#    docker pull nvcr.io/nvidia/pytorch:20.06-py3 # working pytorch
+#    docker pull nvcr.io/nvidia/deepstream:5.0-dp-20.04-triton  # working deepstream,tensorrt,etc
+
+
+
+docker run --shm-size=1g --ulimit memlock=-1 --ulimit stack=67108864  --gpus all -it --rm -v /tmp/.X11-unix:/tmp/.X11-unix --device /dev/video0:/dev/video0 -e DISPLAY=$DISPLAY -e PUID="0" -e PGID="0" -w /root nvcr.io/nvidia/deepstream:5.0-dp-20.04-triton
+
+docker run --ipc=host --shm-size=1g --ulimit memlock=-1 --ulimit stack=67108864  --gpus all -it --rm -v /tmp/.X11-unix:/tmp/.X11-unix --device /dev/video0:/dev/video0 -e DISPLAY=$DISPLAY -e PUID="0" -e PGID="0" -w /root nvcr.io/nvidia/pytorch:20.06-py3 
+
+ https://gitlab.com/nvidia/container-images
+
+
+################################################################################
+# Sample 0 -- -just see if it works
+# https://github.com/NVIDIA/nvidia-docker
+# docker run --gpus all nvidia/cuda:10.0-base nvidia-smi
+################################################################################
+
+
+################################################################################
+#  Sample 1
+#  Note you need to run 'xhost +' on the host for the video to display.
+#  nvcr.io/nvidia/deepstream
+#
+#  Run with
+#  docker run --shm-size=1g --ulimit memlock=-1 --ulimit stack=67108864  --gpus all -it --rm -v /tmp/.X11-unix:/tmp/.X11-unix --device /dev/video0:/dev/video0 -e DISPLAY=$DISPLAY -e PUID="0" -e PGID="0" -w /root nvcr.io/nvidia/deepstream:5.0-dp-20.04-triton
+#
+################################################################################
+
+  apt-get update
+  apt-get install -y libssl1.0.0 libgstreamer1.0-0 gstreamer1.0-tools gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-plugins-ugly gstreamer1.0-libav libgstrtspserver-1.0-0 libjansson4
+  apt-get install -y libgstreamer1.0-0 gstreamer1.0-plugins-good gstreamer1.0-libav 
+  apt-get install -y pkg-config
+  apt-get install -y libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev libgstreamer-plugins-good1.0-dev 
+  (cd /opt/nvidia/deepstream/deepstream-5.0/sources/apps/sample_apps/deepstream-test1; export CFLAGS=`pkg-config --cflags gstreamer-1.0`; make)
+  (cd /opt/nvidia/deepstream/deepstream-5.0/sources/apps/sample_apps/deepstream-test1; ./deepstream-test1-app /opt/nvidia/deepstream/deepstream-5.0/samples/streams/sample_720p.h264)
+
+################################################################################
+#  Sample 2 - docker with webcam - inferring cars & people
+#  Note you need to run 'xhost +' on the host for the video to display.
+################################################################################
+
+
+xhost + 
+
+docker run --shm-size=1g --ulimit memlock=-1 --ulimit stack=67108864 \
+    --gpus all -it --rm -v /tmp/.X11-unix:/tmp/.X11-unix \
+    --device /dev/video0:/dev/video0 -e DISPLAY=$DISPLAY -e PUID="0" -e
+    PGID="0" -w /root nvcr.io/nvidia/deepstream:5.0-dp-20.04-triton
+
+(cd /opt/nvidia/deepstream/deepstream/bin ; ./deepstream-app -c ../samples/configs/deepstream-app/source1_usb_dec_infer_resnet_int8.txt)
+
+################################################################################
+#  Sample 3 pytorch
+################################################################################
+apt-get update
+apt-get install python3.8 python3.8-venv python3.8-dev
+source ~/.python/3.8/bin/activate
+pip install wheel
+pip install torch
+
+
+################################################################################
+#  Sample 3 trt_pose
+################################################################################
+
+Download both of thse
+
+* resnet18_baseline_att_224x224_A 
+* densenet121_baseline_att_256x256_B
+
+https://github.com/NVIDIA-AI-IOT/trt_pose
+
+################################################################################
+#
+# postgres
+#
+################################################################################
+#
+# https://hub.docker.com/_/postgres
+#
+# docker rm `docker ps --all -q`
+
+
+pgdata=~/var/lib/postgresql/testing
+docker pull postgres:12
+mkdir -p $pgdata
+
+docker run -d \
+	--name pg \
+	-v ${pgdata}:/var/lib/postgresql/data \
+        -v /etc/passwd:/etc/passwd:ro \work
+        --shm-size=256MB \
+        -p 5432:5432 \
+        postgres:12
+
+docker inspect pg -f "{{json .NetworkSettings.Networks }}"
+docker update --restart=on-failure:3 pg
+
+################################################################################
+
+docker pull  postgis/postgis:12-master
+
+
+docker run -d \
+	--name pg \
+	-v ${pgdata}:/var/lib/postgresql/data \
+        -v /etc/passwd:/etc/passwd:ro \
+        --shm-size=256MB \
+        -p 5432:5432 \
+        postgis/postgis:12-master
+
+
+echo "'create user gisadmin superuser password 'a good password'" | docker exec -it pg psql postges
+echo "'create user gis superuser password 'a good password'" | docker exec -it pg psql postges
+
+docker exec -it pg psql postgres postgres -c 'alter system set max_connections=1000';
+docker restart pg
+
+
+wget  download.geofabrik.de/north-america/us/california-latest.osm.pbf
+osm2pgsql --proj 3857 -d gis -U gis -H localhost --hstore --slim --number-processes 32 california-latest.osm.pbf -r pbf
+
+wget  download.geofabrik.de/north-america/us/new-mexico-latest.osm.pbf
+osm2pgsql --proj 3857 -d gis -U gis -H localhost --hstore --slim --number-processes 32 new-mexico-latest.osm.pbf -r pbf
+
+# wget -nc --continue download.geofabrik.de/north-america/us/planet-latest.osm.pbf
+# rm planet-latest.osm.pbf ; wget https://ftpmirror.your.org/pub/openstreetmap/pbf/planet-latest.osm.pbf
+rm planet-latest.osm.pbf ; wget https://ftp.osuosl.org/pub/openstreetmap/pbf/planet-latest.osm.pbf
+
+osm2pgsql --proj 3857 -d gis -U gis -H localhost --hstore --slim --number-processes 32 new-mexico-latest.osm.pbf -r pbf
+
+flat_node_file=osm2pgsql.flat_nodes.gis
+osm2pgsql --proj 3857 --flat-nodes $flat_node_file -d gis -U gis -H localhost --hstore --slim -C 12000 --number-processes 20 --keep-coastlines --cache-strategy dense planet-latest.osm.pbf
+
+ osm2pgsql --proj 3 1750  mkdir ~/tmp
+ 1751  sudo fallocate  --help
+ 1752  sudo fallocate -l 16G  ~/tmp/16Gswap
+ 1753  sudo chmod  600  ~/tmp/16Gswap
+ 1754  sudo swapon  ~/tmp/16Gswap
+ 1755  sudo mkswap ~/tmp/16Gswap
+ 1756  sudo swapon  ~/tmp/16Gswap
+
+857 --flat-nodes $flat_node_file -d gis -U gis -H localhost --hstore --slim -C 12000 --number-processes 20 --keep-coastlines --cache-strategy dense planet-latest.osm.pbf
+osm2pgsql version 0.94.0 (64 bit id space)
+
+Using built-in tag processing pipeline
+Using projection SRS 3857 (Spherical Mercator)
+Setting up table: planet_osm_point
+Setting up table: planet_osm_line
+Setting up table: planet_osm_polygon
+Setting up table: planet_osm_roads
+Allocating memory for dense node cache
+Allocating dense node cache in one big chunk
+Node-cache: cache=12000MB, maxblocks=192000*65536, allocation method=10
+Mid: loading persistent node cache from osm2pgsql.flat_nodes.gis
+Mid: pgsql, cache=12000
+Setting up table: planet_osm_nodes
+Setting up table: planet_osm_ways
+Setting up table: planet_osm_rels
+
+Reading in file: planet-latest.osm.pbf
+Using PBF parser.
+Processing: Node(6218959k 8280.9k/s) Way(239k 2.06k/s) Relation(0 0.00/s)
+Processing: Node(6218959k 8280.9k/s) Way(2607k 4.48k/s) Relation(0 0.00/s)
+Processing: Node(6218959k 8280.9k/s) Way(118128k 8.85k/s) Relation(0 0.00/s)
+Processing: Node(6218959k 8280.9k/s) Way(121849k 8.92k/s) Relation(0 0.00/s)
+
+
+Processing: Node(6218959k 8280.9k/s) Way(686410k 17.18k/s) Relation(8018610 162.71/s)  parse time: 89984s
+Node stats: total(6218959598), max(7779552067) in 751s
+Way stats: total(686410196), max(833365362) in 39951s
+Relation stats: total(8018628), max(11375527) in 49281s
+Committing transaction for planet_osm_point
+Committing transaction for planet_osm_line
+Committing transaction for planet_osm_polygon
+Committing transaction for planet_osm_roads
+Setting up table: planet_osm_nodes
+Setting up table: planet_osm_ways
+NOTICE:  Self-intersection at or near point -5306220.9266634565 -2596580.5319690364
+Creating osm_id index on planet_osm_point
+Creating indexes on planet_osm_point finished
+All indexes on planet_osm_point created in 6306s
+Completed planet_osm_point
+Copying planet_osm_line to cluster by geometry finished
+Creating geometry index on planet_osm_line
+
+
+# even with 64GB of SWAP!!!!!
+
+
+[185454.304598] oom-kill:constraint=CONSTRAINT_NONE,nodemask=(null),cpuset=/,mems_allowed=0,global_oom,task_memcg=/user.slice,task=osm2pgsql,pid=32376,uid=1000
+[185454.304658] Out of memory: Killed process 32376 (osm2pgsql) total-vm:88988696kB, anon-rss:0kB, file-rss:572kB, shmem-rss:0kB, UID:1000 pgtables:170520kB oom_score_adj:0
+[185454.988636] oom_reaper: reaped process 32376 (osm2pgsql), now anon-rss:0kB, file-rss:0kB, shmem-rss:0kB
+[192439.096934] docker0: port 2(veth2edd69d) entered disabled state
+
+
+
+##########################################
+
+sudo sysctl -w vm.overcommit_memory=1
