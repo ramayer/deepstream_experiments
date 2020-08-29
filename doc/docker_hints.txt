@@ -65,10 +65,10 @@ pip install torch
 
 
 ################################################################################
-#  Sample 3 trt_pose
+#  Sample 4 trt_pose
 ################################################################################
 
-Download both of thse
+Download both of these
 
 * resnet18_baseline_att_224x224_A 
 * densenet121_baseline_att_256x256_B
@@ -144,6 +144,12 @@ osm2pgsql --proj 3857 --flat-nodes $flat_node_file -d gis -U gis -H localhost --
  1754  sudo swapon  ~/tmp/16Gswap
  1755  sudo mkswap ~/tmp/16Gswap
  1756  sudo swapon  ~/tmp/16Gswap
+
+sudo fallocate -l 64G  ~/tmp/64Gswap
+sudo chmod  600  ~/tmp/64Gswap
+sudo mkswap ~/tmp/64Gswap
+sudo swapon  ~/tmp/64Gswap
+
 
 857 --flat-nodes $flat_node_file -d gis -U gis -H localhost --hstore --slim -C 12000 --number-processes 20 --keep-coastlines --cache-strategy dense planet-latest.osm.pbf
 osm2pgsql version 0.94.0 (64 bit id space)
