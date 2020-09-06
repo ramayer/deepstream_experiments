@@ -1,4 +1,4 @@
-
+1
 # interesting starting ponts for docker containers
 #    nvidia/cuda:10.0-cudnn7-devel-ubuntu16.04    # the openpose containers were based on this one.
 #    nvidia/cuda:10.0-cudnn7-devel-ubuntu18.04    # newer
@@ -49,19 +49,19 @@ xhost +
 
 docker run --shm-size=1g --ulimit memlock=-1 --ulimit stack=67108864 \
     --gpus all -it --rm -v /tmp/.X11-unix:/tmp/.X11-unix \
-    --device /dev/video0:/dev/video0 -e DISPLAY=$DISPLAY -e PUID="0" -e
-    PGID="0" -w /root nvcr.io/nvidia/deepstream:5.0-dp-20.04-triton
+    --device /dev/video0:/dev/video0 -e DISPLAY=$DISPLAY -e PUID="0" \
+    -e PGID="0" -w /root nvcr.io/nvidia/deepstream:5.0-dp-20.04-triton
 
 (cd /opt/nvidia/deepstream/deepstream/bin ; ./deepstream-app -c ../samples/configs/deepstream-app/source1_usb_dec_infer_resnet_int8.txt)
 
 ################################################################################
 #  Sample 3 pytorch
 ################################################################################
+
 apt-get update
-apt-get install python3.8 python3.8-venv python3.8-dev
-source ~/.python/3.8/bin/activate
-pip install wheel
-pip install torch
+apt-get install -y python3.8 python3.8-venv python3.8-dev
+#source ~/.python/3.8/bin/activate
+pip install -y wheel torch
 
 
 ################################################################################

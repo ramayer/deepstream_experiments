@@ -17,5 +17,7 @@ RUN pip3 install opencv-python
 RUN curl 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/34/1991-Silje_Studio_11%C3%A5r_cropped.jpg/220px-1991-Silje_Studio_11%C3%A5r_cropped.jpg' > /workspace/dance.jpg
 RUN curl 'https://upload.wikimedia.org/wikipedia/commons/7/72/Mia1997.JPG' > /workspace/soccer.jpg
 
+ADD trt_pose_demo.ipynb /workspace/trt_pose/tasks/human_pose
+
 # at this point the following should work:
 #  (cd /workspace/trt_pose/tasks/human_pose/ ; jupyter-lab)&
